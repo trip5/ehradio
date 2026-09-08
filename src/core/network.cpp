@@ -38,11 +38,9 @@ void ticks() {
   if (!display.ready()) return; //waiting for SD is ready
   static uint32_t timeSyncTicks = 0;
   static uint16_t weatherSyncTicks = 0;
-  static uint32_t _heapTick = 0;
   static bool divrssi;
   timeSyncTicks++;
   weatherSyncTicks++;
-  if (++_heapTick >= 300) { _heapTick = 0; FUNCTIONLOG("Heap", "Free: %u Min: %u", ESP.getFreeHeap(), ESP.getMinFreeHeap()); }
   divrssi = !divrssi;
   if (network.status == CONNECTED) {
     if (config.store.ehdp) ehdp.loop();
