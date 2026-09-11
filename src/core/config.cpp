@@ -77,12 +77,11 @@ void Config::init() {
   if (!config.store.bootStableMarker) delay(1000);  // Allow serial monitor to connect before logging in Safe mode
   bootInfo();
   #if RTCSUPPORTED
-    BOOTLOG("RTC begin(SDA=%d,SCL=%d)", RTC_SDA, RTC_SCL);
     if (rtc.init()) {
-      BOOTLOG("RTC.init done");
+      BOOTLOG("RTC.init\tdone");
       _rtcFound = true;
     } else {
-      BOOTLOG("[ERROR] - Couldn't find RTC");
+      ERRORLOG("RTC.init\tfailed");
     }
   #endif
   #if defined(SPIA_SCK) && (SPIA_SCK != 255)
@@ -730,6 +729,9 @@ void Config::bootInfo() {
     #else
       BOOTLOG("Touchscreen:\t Model: %d, SDA: %d, SCL: : %d, INT: %d, RST: %d", TS_MODEL, TS_SDA, TS_SCL, TS_INT, TS_RST);
     #endif
+  #endif
+  #if (RTC_MODULE!=RTC_MODULE_UNDEFINED)
+    BOOTLOG("RTC:\t\tSDA: %d, SCL: %d", RTC_SDA, RTC_SCL);
   #endif
   #ifdef FIRMWARE
     BOOTLOG("Firmware:\t%s", FIRMWARE);

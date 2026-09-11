@@ -440,6 +440,6 @@ Most users will not remember the difference between "shortly after power-up" and
 
 ## RTC
 
-An I2C RTC module may be added to the build as well.  This *should* keep the time when network connectivity is unavailable.
+An I2C RTC module may be added to the build as well.  This will keep the time when in SD Offline Mode.
 
 Supported RTC modules include DS3231 and DS1307.

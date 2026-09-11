@@ -36,9 +36,9 @@ Button Actions
 | -------- | -------------------------------------------------------- | ------------------------------ | ---------- |
 | BTN_PLAY | start/stop playing                                       | toggle stations/SD mode        | toggle between player and playlist |
 | BTN_DOWN | volume down                                              | previous station/track         | quick volume down |
-| BTN_UP   | volume up                                                | quick next station/track       | quick volume up |
+| BTN_UP   | volume up                                                | next station/track             | quick volume up |
 | BTN_NEXT | switch to playlist (if display) / next station/track     | instant next station/track     | quick next |
-| BTN_PREV | switch to playlist (if display) / previous station/track | instant next station/track     | quick next |
+| BTN_PREV | switch to playlist (if display) / previous station/track | instant previous station/track | quick previous |
 | BTN_MODE | toggle stations/SD mode                                  | mute * *nothing if no display* | enter deep sleep |
 
 Turning on `One-click Station Switching` in the WebUI or having no display modifies the next and previous buttons. Double-click has no effect.

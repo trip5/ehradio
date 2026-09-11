@@ -154,7 +154,7 @@ bool CommandHandler::exec(const char *command, const char *value, uint8_t cid, C
   if (cmdIs(command, "brightness", "dim")) {
     if (!config.store.dspon) netserver.requestOnChange(DSPON, 0);
     int bri=atoi(value);
-    config.store.brightness = (uint8_t)(bri < 0 ? 0 : (bri > 100 ? 100 : bri));
+    config.store.brightness = (uint8_t)(bri < 1 ? 1 : (bri > 100 ? 100 : bri));
     if (config.store.dimmingBrightness > config.store.brightness) {
       config.store.dimmingBrightness = config.store.brightness;
       config.saveValueButWait(&config.store.dimmingBrightness, config.store.dimmingBrightness, 5000);
