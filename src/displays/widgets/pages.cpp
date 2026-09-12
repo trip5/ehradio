@@ -47,7 +47,9 @@ void Pager::setPage(Page* page, bool black){
 //}
 
 Page::~Page() {
-  for (const auto& w : _widgets) removeWidget(w);
+  std::list<Widget*> draining;
+  draining.swap(_widgets);
+  for (const auto& w : draining) delete w;
   // what about deleting _pages ???
 }
 

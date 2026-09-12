@@ -76,8 +76,8 @@ class TextWidget: public Widget {
     void setText(const char* txt, const char *format);
     bool uppercase() { return _uppercase; }
   protected:
-    char *_text;
-    char *_oldtext;
+    char *_text = nullptr;
+    char *_oldtext = nullptr;
     bool _uppercase;
     uint16_t  _buffsize, _textwidth, _oldtextwidth, _oldleft, _textheight;
     uint8_t _charWidth;
@@ -110,8 +110,8 @@ class ScrollWidget: public TextWidget {
     void setText(const char* txt);
     void setText(const char* txt, const char *format);
   private:
-    char *_sep;
-    char *_window;
+    char *_sep = nullptr;
+    char *_window = nullptr;
     int16_t _x;
     bool _doscroll;
     uint8_t _scrolldelta;
@@ -167,7 +167,8 @@ class VuWidget: public Widget {
     uint16_t _vumaxcolor, _vumincolor;
     bool _rotate = false;
     void _draw();
-    void _drawRotated();
+    void _levels(uint16_t len, uint16_t &measL, uint16_t &measR);
+    void _drawBand(uint16_t pos, uint8_t ch, uint16_t h, uint16_t color);
     void _clear();
 };
 
@@ -206,6 +207,7 @@ class ProgressWidget: public TextWidget {
 class ClockWidget: public Widget {
   public:
     using Widget::init;
+    ~ClockWidget();
     void init(WidgetConfig wconf, uint16_t fgcolor, uint16_t bgcolor);
     void draw();
     void forceDraw() { _draw(); }

@@ -248,7 +248,7 @@ void Display::_buildPager() {
   if (fullbitrateConf_ptr->dimension > 0) {
     _fullbitrate = new BitrateWidget(*fullbitrateConf_ptr, config.theme.bitrate, config.theme.background);
     pages[PG_PLAYER]->addWidget(_fullbitrate);
-  } else {
+  } else if (bitrateConf_ptr->textsize > 0) {
     _bitrate = new TextWidget(*bitrateConf_ptr, 30, false, config.theme.bitrate, config.theme.background);
     pages[PG_PLAYER]->addWidget(_bitrate);
   }
@@ -310,7 +310,11 @@ void Display::_buildPager() {
 }
 
 void Display::_apScreen() {
-  if (_boot) _pager->removePage(_boot);
+  if (_boot) {
+    _pager->removePage(_boot);
+    _boot = nullptr;
+    _bootstring = nullptr;
+  }
   #ifndef DSP_LCD
     _boot = new Page();
     #if DSP_MODEL!=DSP_NOKIA5110
@@ -349,7 +353,11 @@ void Display::_apScreen() {
 }
 
 void Display::_start() {
-  if (_boot) _pager->removePage(_boot);
+  if (_boot) {
+    _pager->removePage(_boot);
+    _boot = nullptr;
+    _bootstring = nullptr;
+  }
   if (network.status != CONNECTED && network.status != SDOFFLINE) {
     _apScreen();
       _bootStep = 2;
@@ -983,11 +991,13 @@ void Display::_reinitWidgets() {
       pages[PG_PLAYER]->addWidget(_fullbitrate);
     } else _fullbitrate->init(*fullbitrateConf_ptr, config.theme.bitrate, config.theme.background);
   } else {
-    if (!_bitrate) {
-      if (_fullbitrate) { pages[PG_PLAYER]->removeWidget(_fullbitrate); delete _fullbitrate; _fullbitrate = nullptr; }
-      _bitrate = new TextWidget(*bitrateConf_ptr, 30, false, config.theme.bitrate, config.theme.background);
-      pages[PG_PLAYER]->addWidget(_bitrate);
-    } else _bitrate->init(*bitrateConf_ptr, 30, false, config.theme.bitrate, config.theme.background);
+    if (_fullbitrate) { pages[PG_PLAYER]->removeWidget(_fullbitrate); delete _fullbitrate; _fullbitrate = nullptr; }
+    if (bitrateConf_ptr->textsize > 0) {
+      if (!_bitrate) {
+        _bitrate = new TextWidget(*bitrateConf_ptr, 30, false, config.theme.bitrate, config.theme.background);
+        pages[PG_PLAYER]->addWidget(_bitrate);
+      } else _bitrate->init(*bitrateConf_ptr, 30, false, config.theme.bitrate, config.theme.background);
+    }
   }
 
   // --- Footer widgets (lazy-create if newly enabled) ---
@@ -1036,6 +1046,16 @@ void Display::_reinitWidgets() {
   #endif
   #if DSP_MODEL==DSP_NOKIA5110
     if (_plbackground) _plbackground->init(*playlBGConf_ptr, 1);
+  #endif
+  /* _plbackground->init() above resets _height and _config.top back to playlBGConf.
+     Its geometry is meant to follow the live playlist rows, so re-apply the same
+     values _buildPager() uses — otherwise the highlight band keeps the conf
+     height/position instead of matching itemHeight(). */
+  #if !defined(DSP_LCD) && !PLAYLIST_MODE_PAGED
+    if (_plbackground) {
+      _plbackground->setHeight(_plwidget->itemHeight());
+      _plbackground->moveTo({0,(uint16_t)(_plwidget->currentTop()-playlistConf_ptr->widget.textsize*2), (int16_t)playlBGConf_ptr->width});
+    }
   #endif
 }
 

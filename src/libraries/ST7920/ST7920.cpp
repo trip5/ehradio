@@ -61,6 +61,7 @@ ST7920::~ST7920(void) {
 }
 
 void ST7920::begin(void) {
+  if (buffer) { free(buffer); buffer = NULL; }
   buffer = (uint8_t *)malloc( 1024 );
   _invert = false;
   _dosleep = false;

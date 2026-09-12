@@ -87,13 +87,11 @@ const LayoutData _layouts[] PROGMEM = {
         .rssiConf            = { TFT_FRAMEWDT, DSP_HEIGHT-38-6, 3, WA_RIGHT },
         .numConf             = { 0, 200, 0, WA_CENTER },
         .clockConf           = { TFT_FRAMEWDT*2, 230, 0, WA_RIGHT },
-        .vuConf              = { TFT_FRAMEWDT, 161, 1, WA_LEFT }, //136 touches title2 almost, 210 touches IP, 162 (161?) top of clock
-        //.vuConf              = { TFT_FRAMEWDT, 159, 1, WA_LEFT }, //136 touches title2 almost, 210 touches IP, 162 (161?) top of clock
+        .vuConf              = { TFT_FRAMEWDT, 161, 1, WA_LEFT },
         /* CODEC BADGE         {{ left, top, fontsize, align }, dimension} - if empty, bitrateConf will be used instead */
         .fullbitrateConf     = {{ DSP_WIDTH-TFT_FRAMEWDT-38, 59, 2, WA_LEFT }, 42 },
         /* VU BANDS            { onebandwidth, onebandheight, bandsHspace, bandsVspace, numofbands, fadespeed } */
-        //.bandsConf           = { 46, 130, 7, 2, 10, 3 }, //1st: 32, 130, 4, 2
-        .bandsConf           = { 25, 130, 17, 3, 10, 3 }, //1st: 32, 130, 4, 2
+        .bandsConf           = { 25, 130, 17, 3, 10, 3 },
         /* MOVES               { left, top, width (-1 keeps Conf position) */
         .clockMove           = { 0, 0, -1 },
         .weatherMove         = { TFT_FRAMEWDT, 120, MAX_WIDTH },

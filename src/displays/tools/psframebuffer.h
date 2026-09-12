@@ -35,9 +35,10 @@ class  psFrameBuffer : public Adafruit_GFX {
       _ready = false;
       if(buffer) {
         _dspl->fillRect(_ll, _tt, _ww, _hh, _bgcolor);
-        psramFrameBufferBytes -= _hh * _ww * sizeof(uint16_t);
+        if (_psram) psramFrameBufferBytes -= _hh * _ww * sizeof(uint16_t);
         free(buffer);
       }
+      _psram = false;
       buffer = nullptr;
     }
     bool begin(yoDisplay *dspl, int16_t l, int16_t t, int16_t w, int16_t h, uint16_t bgcolor = 0){
@@ -99,17 +100,20 @@ class  psFrameBuffer : public Adafruit_GFX {
     int16_t height(){ return _hh; }
   private:
     int16_t _ll, _tt, _ww, _hh;
-    yoDisplay *_dspl;
+    yoDisplay *_dspl = nullptr;
     uint16_t *buffer=nullptr;
     bool _ready = false;
+    bool _psram = false;
     uint16_t _bgcolor;
     void _createBuffer(){
       #if (defined(USE_FBUFFER) && USE_FBUFFER)
         if(psramInit()) {
           buffer = (uint16_t*) ps_calloc(_hh * _ww, sizeof(uint16_t));
+          _psram = true;
           psramFrameBufferBytes += _hh * _ww * sizeof(uint16_t);
         } else {
           buffer = (uint16_t*) calloc(_hh * _ww, sizeof(uint16_t));
+          _psram = false;
         }
       #endif
       if(buffer){

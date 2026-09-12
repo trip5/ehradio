@@ -754,6 +754,35 @@ Important rendering invariants:
 - Never call `startWrite()`/`endWrite()` in `write()` or `writePixel`/`writeFillRect` overrides — SPI nesting causes hangs on Adafruit TFT drivers.
 - The `gfxFont == NULL` case (YO_MONO / display font) runs through `_writeGlyph` using DisplayFont, NOT the built-in glcdfont. This means glyph metrics (yAdvance, yOffset, xAdvance) come from DisplayFont.
 
+## Display Widget Memory Ownership
+
+The widget classes mix two allocation conventions; release must match allocation:
+
+| Member | Owner | Allocated with | Released with |
+|---|---|---|---|
+| `_text`, `_oldtext` | `TextWidget` (and `NumWidget`, which duplicates it) | `malloc` | `free` |
+| `_sep`, `_window` | `ScrollWidget` | `malloc` | `free` |
+| `_fb` | `ScrollWidget`, `ClockWidget` | `new psFrameBuffer` | `delete` |
+| `_canvas` | `VuWidget` | `new Canvas` | `delete` |
+
+Rules:
+- Never `free()` a `new`-allocated object: `free()` skips the destructor and leaks the internal buffer.
+- `init()` is re-called on every layout/theme change, so it must release its previous buffers first.
+- Resize an existing `psFrameBuffer` with `freeBuffer()` then `begin()`, never by allocating a second one.
+
+### Optional widget guard fields
+
+Each config type has its own field that makes a widget meaningful, and that is what the creation guard in `display.cpp` must test — never a coordinate, since `{0,0}` is a legitimate position:
+
+| Config type | Fields | Guard field |
+|---|---|---|
+| `WidgetConfig` | `left`, `top`, `textsize`, `align` | `textsize > 0` |
+| `ScrollConfig` | `widget`, `buffsize`, `uppercase`, `width`, ... | `buffsize > 0` |
+| `FillConfig` | `widget`, `width`, `height`, `outlined` | `height > 0` |
+| `BitrateConfig` | `widget`, `dimension` | `dimension > 0` |
+
+`_fullbitrate` and `_bitrate` are alternatives: an empty `.fullbitrateConf` falls back to `.bitrateConf`, and `_reinitWidgets` must tear down whichever one is no longer wanted even when the replacement config is itself empty.
+
 ## Screen Rendering Fixes (Session: SH1106 YO_MONO)
 
 ### ClockWidget colon blink (widgets.cpp)
@@ -774,6 +803,13 @@ Important rendering invariants:
 - `YO_CLASSIC` removed as a clock font option (variable-width variant of YO_MONO that broke layout assumptions).
 
 ---
+
+## Screen Rendering Fixes (Session: VU Rotated Layout)
+
+- **New layout flag** `LayoutData::rotateVU` (exposed via `rotateVU_ptr`), treated exactly like `boomboxStyle` — absent means false. `VuWidget::_rotate` is read from `rotateVU_ptr` in `init()`.
+- **Layout ordering** in `displayTFT480x320conf.h`: `_layoutNames` is now `Default`, `Default (VU Rotated)`, `VaraiTamas (BoomBox)`. The rotated layout is layout #2 (`bandsConf = { 32, 130, 4, 2, 10, 3 }`, `.rotateVU = true`); BoomBox moved to #3.
+- **Blit choice**: `VuWidget::_draw()` uses the manual `startWrite()` / `setAddrWindow()` / `writePixels()` / `endWrite()` sequence for all three modes. `drawRGBBitmap()` was deliberately removed from the widget layer — the manual path depends only on `setAddrWindow` and `writePixels`, which every TFT driver is guaranteed to implement, and it issues a single bulk transfer rather than one `writePixels` call per scanline. Do not switch this back.
+- **Direction**: the rotated VU fills left-to-right with `_vumaxcolor` at the right end.
 
 ## CPU Core Assignments & Stack Sizes
 

@@ -48,6 +48,10 @@
   - **If the change touches ANY firmware file**: You **MUST READ** `.github/code-summary.md` before writing code. Also check `.github/code-issues.md` for known issues in the affected area.
   - **If the change touches ONLY non-firmware files** (workflows, docs, build scripts, config generators, Home Assistant, images, etc.): `code-summary.md` review is **NOT** required. Still check `code-issues.md` if relevant.
   - **One-line/trivial fixes** (typos, formatting) are exempt regardless of file type.
+- **What `.github/code-issues.md` is for**: it tracks **open** issues that still need investigation, or that are blocked — for example, waiting on hardware the maintainer does not own. It is **not** a changelog.
+  - Do **not** add entries for problems found and fixed in the same change set.
+  - Do **not** add general rules or subsystem documentation there; that belongs in `code-summary.md` (Rule #4).
+  - Do read it before editing an affected area, and **update or close an existing entry** if your change fixes it or alters the code that entry describes.
 
 **Enforcement and AI Behavior**
 - Always validate proposed changes against these rules **before every action**.

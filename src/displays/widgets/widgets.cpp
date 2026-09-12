@@ -58,6 +58,8 @@ void TextWidget::_charSize(uint8_t textsize, uint8_t& width, uint16_t& height){
 void TextWidget::init(WidgetConfig wconf, uint16_t buffsize, bool uppercase, uint16_t fgcolor, uint16_t bgcolor) {
   Widget::init(wconf, fgcolor, bgcolor);
   _buffsize = buffsize;
+  if (_text)    { free(_text);    _text = nullptr; }
+  if (_oldtext) { free(_oldtext); _oldtext = nullptr; }
   _text = (char *) malloc(sizeof(char) * _buffsize);
   memset(_text, 0, _buffsize);
   _oldtext = (char *) malloc(sizeof(char) * _buffsize);
@@ -144,13 +146,15 @@ ScrollWidget::ScrollWidget(const char* separator, ScrollConfig conf, uint16_t fg
 }
 
 ScrollWidget::~ScrollWidget() {
-  free(_fb);
-  free(_sep);
-  free(_window);
+  if (_fb)     { delete _fb;     _fb = nullptr; }
+  if (_sep)    { free(_sep);     _sep = nullptr; }
+  if (_window) { free(_window);  _window = nullptr; }
 }
 
 void ScrollWidget::init(const char* separator, ScrollConfig conf, uint16_t fgcolor, uint16_t bgcolor) {
   TextWidget::init(conf.widget, conf.buffsize, conf.uppercase, fgcolor, bgcolor);
+  if (_sep)    { free(_sep);    _sep = nullptr; }
+  if (_window) { free(_window); _window = nullptr; }
   _sep = (char *) malloc(sizeof(char) * 4);
   memset(_sep, 0, 4);
   snprintf(_sep, 4, " %.*s ", 1, separator);
@@ -161,12 +165,15 @@ void ScrollWidget::init(const char* separator, ScrollConfig conf, uint16_t fgcol
   _charSize(_config.textsize, _charWidth, _textheight);
   _sepwidth = strlen(_sep) * _charWidth;
   _width = conf.width;
+  if (_width > (uint16_t)MAX_WIDTH) _width = (uint16_t)MAX_WIDTH;
   _backMove.width = _width;
-  _window = (char *) malloc(sizeof(char) * (MAX_WIDTH / _charWidth * 4 + 1));  /* worst-case: 4-byte UTF-8 chars */
-  memset(_window, 0, (MAX_WIDTH / _charWidth + 1));  // +1?
+  uint16_t wndsz = _width / _charWidth * 4 + 1;   /* worst-case: 4-byte UTF-8 chars */
+  _window = (char *) malloc(sizeof(char) * wndsz);
+  memset(_window, 0, wndsz);
   _doscroll = false;
   #ifdef PSFBUFFER
-    _fb = new psFrameBuffer(dsp.width(), dsp.height());
+    if (_fb) _fb->freeBuffer();
+    else     _fb = new psFrameBuffer(dsp.width(), dsp.height());
     uint16_t _rl = (_config.align==WA_CENTER)?(dsp.width()-_width)/2:_config.left;
     _fb->begin(&dsp, _rl, _config.top, _width, _textheight, _bgcolor);
   #endif
@@ -426,7 +433,7 @@ void SliderWidget::_reset() {
  ************************/
 #if !defined(DSP_LCD) && !defined(DSP_OLED)
 VuWidget::~VuWidget() {
-  if(_canvas) free(_canvas);
+  if (_canvas) { delete _canvas; _canvas = nullptr; }
 }
   
 void VuWidget::init(WidgetConfig wconf, VUBandsConfig bands, uint16_t vumaxcolor, uint16_t vumincolor, uint16_t bgcolor) {
@@ -443,118 +450,100 @@ void VuWidget::init(WidgetConfig wconf, VUBandsConfig bands, uint16_t vumaxcolor
 
 void VuWidget::_draw(){
   if(!_active || _locked) return;
-  if (_rotate) { _drawRotated(); return; }
-  #if defined(USE_AUDIO_VS1053)
-  /*  static uint8_t cc = 0;
-    cc++;
-    if(cc>0){
-      player.getVUlevel();
-      cc=0;
-    }*/
-  #endif
-  static uint16_t measL, measR;
-  uint16_t bandColor;
-  uint16_t dimension = _config.align?_bands.width:_bands.height;
-  uint16_t vulevel = player.get_VUlevel(dimension);
-  
-  uint8_t L = (vulevel >> 8) & 0xFF;
-  uint8_t R = vulevel & 0xFF;
-  
-  bool played = player.isRunning();
-  if(played){
-    measL=(L>=measL)?measL + _bands.fadespeed:L;
-    measR=(R>=measR)?measR + _bands.fadespeed:R;
-  }else{
-    if(measL<dimension) measL += _bands.fadespeed;
-    if(measR<dimension) measR += _bands.fadespeed;
+
+  uint16_t len, thk;
+  if (!_rotate && _config.align) {
+    len = _bands.width;
+    thk = _bands.height;
+  } else {
+    len = _bands.height;
+    thk = _bands.width;
   }
-  if(measL>dimension) measL=dimension;
-  if(measR>dimension) measR=dimension;
-  uint8_t h=(dimension/_bands.perheight)-_bands.vspace;
-  _canvas->fillRect(0,0,_bands.width * 2 + _bands.space,_bands.height, _bgcolor);
-  for(int i=0; i<dimension; i++){
-    if(i%(dimension/_bands.perheight)==0){
-      if(_config.align){
-        if (!*boomboxStyle_ptr) {
-          bandColor = (i>_bands.width-(_bands.width/_bands.perheight)*4)?_vumaxcolor:_vumincolor;
-          _canvas->fillRect(i, 0, h, _bands.height, bandColor);
-          _canvas->fillRect(i + _bands.width + _bands.space, 0, h, _bands.height, bandColor);
-        } else {
-          bandColor = (i>(_bands.width/_bands.perheight))?_vumincolor:_vumaxcolor;
-          _canvas->fillRect(i, 0, h, _bands.height, bandColor);
-          bandColor = (i>_bands.width-(_bands.width/_bands.perheight)*3)?_vumaxcolor:_vumincolor;
-          _canvas->fillRect(i + _bands.width + _bands.space, 0, h, _bands.height, bandColor);
-        }
-      }else{
-        bandColor = (i<(_bands.height/_bands.perheight)*3)?_vumaxcolor:_vumincolor;
-        _canvas->fillRect(0, i, _bands.width, h, bandColor);
-        _canvas->fillRect(_bands.width + _bands.space, i, _bands.width, h, bandColor);
+  uint16_t cw, ch;
+  if (_rotate) { cw = len; ch = _bands.width * 2 + _bands.space; }
+  else         { cw = _bands.width * 2 + _bands.space; ch = _bands.height; }
+
+  uint16_t measL, measR;
+  _levels(len, measL, measR);
+
+  _canvas->fillRect(0, 0, cw, ch, _bgcolor);
+
+  uint16_t step = len / _bands.perheight;
+  if (step < 1) step = 1;
+  uint16_t h = step;
+  if (h > _bands.vspace) h -= _bands.vspace;
+  else h = 1;
+
+  for (int i = 0; i < len; i += step) {
+    uint16_t colorL, colorR;
+    if (_rotate) {
+      colorL = colorR = (i > len - step * 3) ? _vumaxcolor : _vumincolor;
+    } else if (_config.align) {
+      if (!*boomboxStyle_ptr) {
+        colorL = colorR = (i > len - step * 4) ? _vumaxcolor : _vumincolor;
+      } else {
+        colorL = (i > step) ? _vumincolor : _vumaxcolor;
+        colorR = (i > len - step * 3) ? _vumaxcolor : _vumincolor;
       }
-    }
-  }
-  if(_config.align){
-    if (!*boomboxStyle_ptr) {
-      _canvas->fillRect(_bands.width-measL, 0, measL, _bands.width, _bgcolor);
-      _canvas->fillRect(_bands.width * 2 + _bands.space - measR, 0, measR, _bands.width, _bgcolor);
-      dsp.drawRGBBitmap(_config.left, _config.top, _canvas->getBuffer(), _bands.width * 2 + _bands.space, _bands.height);
     } else {
-      _canvas->fillRect(0, 0, _bands.width-(_bands.width-measL), _bands.width, _bgcolor);
-      _canvas->fillRect(_bands.width * 2 + _bands.space - measR, 0, measR, _bands.width, _bgcolor);
-      dsp.startWrite();
-      dsp.setAddrWindow(_config.left, _config.top, _bands.width * 2 + _bands.space, _bands.height);
-      dsp.writePixels((uint16_t*)_canvas->getBuffer(), (_bands.width * 2 + _bands.space)*_bands.height);
-      dsp.endWrite();
+      colorL = colorR = (i < step * 3) ? _vumaxcolor : _vumincolor;
     }
-  }else{
-    _canvas->fillRect(0, 0, _bands.width, measL, _bgcolor);
-    _canvas->fillRect(_bands.width + _bands.space, 0, _bands.width, measR, _bgcolor);
-      dsp.startWrite();
-      dsp.setAddrWindow(_config.left, _config.top, _bands.width * 2 + _bands.space, _bands.height);
-      dsp.writePixels((uint16_t*)_canvas->getBuffer(), (_bands.width * 2 + _bands.space)*_bands.height);
-      dsp.endWrite();
+    _drawBand(i, 0, h, colorL);
+    _drawBand(i, 1, h, colorR);
   }
+
+  if (_rotate) {
+    _canvas->fillRect(len - measL, 0, measL, thk, _bgcolor);
+    _canvas->fillRect(len - measR, thk + _bands.space, measR, thk, _bgcolor);
+  } else if (_config.align) {
+    if (!*boomboxStyle_ptr) {
+      _canvas->fillRect(len - measL, 0, measL, thk, _bgcolor);
+      _canvas->fillRect(cw - measR, 0, measR, thk, _bgcolor);
+    } else {
+      _canvas->fillRect(0, 0, measL, thk, _bgcolor);
+      _canvas->fillRect(cw - measR, 0, measR, thk, _bgcolor);
+    }
+  } else {
+    _canvas->fillRect(0, 0, thk, measL, _bgcolor);
+    _canvas->fillRect(thk + _bands.space, 0, thk, measR, _bgcolor);
+  }
+
+  dsp.startWrite();
+  dsp.setAddrWindow(_config.left, _config.top, cw, ch);
+  dsp.writePixels((uint16_t*)_canvas->getBuffer(), cw * ch);
+  dsp.endWrite();
 }
 
-void VuWidget::_drawRotated(){
-  static uint16_t measL, measR;
-  uint16_t bandColor;
-  uint16_t dimension = _bands.height;          // band length, now horizontal
-  uint16_t thickness = _bands.width;           // band thickness, now vertical
-  uint16_t gap = _bands.space;
-  uint16_t vulevel = player.get_VUlevel(dimension);
-
+void VuWidget::_levels(uint16_t len, uint16_t &measL, uint16_t &measR) {
+  static uint16_t mL = 0, mR = 0;
+  uint16_t vulevel = player.get_VUlevel(len);
   uint8_t L = (vulevel >> 8) & 0xFF;
   uint8_t R = vulevel & 0xFF;
 
   bool played = player.isRunning();
   if(played){
-    measL=(L>=measL)?measL + _bands.fadespeed:L;
-    measR=(R>=measR)?measR + _bands.fadespeed:R;
+    mL=(L>=mL)?mL + _bands.fadespeed:L;
+    mR=(R>=mR)?mR + _bands.fadespeed:R;
   }else{
-    if(measL<dimension) measL += _bands.fadespeed;
-    if(measR<dimension) measR += _bands.fadespeed;
+    if(mL<len) mL += _bands.fadespeed;
+    if(mR<len) mR += _bands.fadespeed;
   }
-  if(measL>dimension) measL=dimension;
-  if(measR>dimension) measR=dimension;
+  if(mL>len) mL=len;
+  if(mR>len) mR=len;
+  measL = mL;
+  measR = mR;
+}
 
-  uint8_t h=(dimension/_bands.perheight)-_bands.vspace;
-  if (h < 1) h = 1;
-  uint16_t step = dimension / _bands.perheight;
-  if (step < 1) step = 1;
-
-  _canvas->fillRect(0, 0, dimension, thickness * 2 + gap, _bgcolor);
-  for(int i=0; i<dimension; i++){
-    if(i % step == 0){
-      bandColor = (i > dimension - (dimension/_bands.perheight)*3) ? _vumaxcolor : _vumincolor;
-      _canvas->fillRect(i, 0, h, thickness, bandColor);
-      _canvas->fillRect(i, thickness + gap, h, thickness, bandColor);
-    }
+void VuWidget::_drawBand(uint16_t pos, uint8_t ch, uint16_t h, uint16_t color) {
+  uint16_t off = 0;
+  if (ch) off = _bands.width + _bands.space;
+  if (_rotate) {
+    _canvas->fillRect(pos, off, h, _bands.width, color);
+  } else if (_config.align) {
+    _canvas->fillRect(off + pos, 0, h, _bands.height, color);
+  } else {
+    _canvas->fillRect(off, pos, _bands.width, h, color);
   }
-  // clear the quiet end (right) so the bar's tip grows left-to-right
-  _canvas->fillRect(dimension - measL, 0, measL, thickness, _bgcolor);
-  _canvas->fillRect(dimension - measR, thickness + gap, measR, thickness, _bgcolor);
-
-  dsp.drawRGBBitmap(_config.left, _config.top, _canvas->getBuffer(), dimension, thickness * 2 + gap);
 }
 
 void VuWidget::loop(){
@@ -625,6 +614,8 @@ uint16_t _textWidth(const char *txt){
 void NumWidget::init(WidgetConfig wconf, uint16_t buffsize, bool uppercase, uint16_t fgcolor, uint16_t bgcolor) {
   Widget::init(wconf, fgcolor, bgcolor);
   _buffsize = buffsize;
+  if (_text)    { free(_text);    _text = nullptr; }
+  if (_oldtext) { free(_oldtext); _oldtext = nullptr; }
   _text = (char *) malloc(sizeof(char) * _buffsize);
   memset(_text, 0, _buffsize);
   _oldtext = (char *) malloc(sizeof(char) * _buffsize);
@@ -706,7 +697,11 @@ void ProgressWidget::loop() {
 
 /**************************
       CLOCK WIDGET
- **************************/
+  **************************/
+ClockWidget::~ClockWidget() {
+  if (_fb) { delete _fb; _fb = nullptr; }
+}
+
 void ClockWidget::init(WidgetConfig wconf, uint16_t fgcolor, uint16_t bgcolor){
   Widget::init(wconf, fgcolor, bgcolor);
   _timeheight = _textHeight();
@@ -723,7 +718,8 @@ void ClockWidget::init(WidgetConfig wconf, uint16_t fgcolor, uint16_t bgcolor){
   }
   _getTimeBounds();
   #ifdef PSFBUFFER
-    _fb = new psFrameBuffer(dsp.width(), dsp.height());
+    if (_fb) _fb->freeBuffer();
+    else     _fb = new psFrameBuffer(dsp.width(), dsp.height());
     _begin();
   #endif
 }
