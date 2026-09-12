@@ -434,12 +434,16 @@ void VuWidget::init(WidgetConfig wconf, VUBandsConfig bands, uint16_t vumaxcolor
   _vumaxcolor = vumaxcolor;
   _vumincolor = vumincolor;
   _bands = bands;
-  _canvas = new Canvas(_bands.width * 2 + _bands.space, _bands.height);
+  _rotate = rotateVU_ptr ? *rotateVU_ptr : false;
+  if (_canvas) { delete _canvas; _canvas = nullptr; }
+  if (_rotate) _canvas = new Canvas(_bands.height, _bands.width * 2 + _bands.space);
+  else         _canvas = new Canvas(_bands.width * 2 + _bands.space, _bands.height);
 }
 
 
 void VuWidget::_draw(){
   if(!_active || _locked) return;
+  if (_rotate) { _drawRotated(); return; }
   #if defined(USE_AUDIO_VS1053)
   /*  static uint8_t cc = 0;
     cc++;
@@ -511,12 +515,57 @@ void VuWidget::_draw(){
   }
 }
 
+void VuWidget::_drawRotated(){
+  static uint16_t measL, measR;
+  uint16_t bandColor;
+  uint16_t dimension = _bands.height;          // band length, now horizontal
+  uint16_t thickness = _bands.width;           // band thickness, now vertical
+  uint16_t gap = _bands.space;
+  uint16_t vulevel = player.get_VUlevel(dimension);
+
+  uint8_t L = (vulevel >> 8) & 0xFF;
+  uint8_t R = vulevel & 0xFF;
+
+  bool played = player.isRunning();
+  if(played){
+    measL=(L>=measL)?measL + _bands.fadespeed:L;
+    measR=(R>=measR)?measR + _bands.fadespeed:R;
+  }else{
+    if(measL<dimension) measL += _bands.fadespeed;
+    if(measR<dimension) measR += _bands.fadespeed;
+  }
+  if(measL>dimension) measL=dimension;
+  if(measR>dimension) measR=dimension;
+
+  uint8_t h=(dimension/_bands.perheight)-_bands.vspace;
+  if (h < 1) h = 1;
+  uint16_t step = dimension / _bands.perheight;
+  if (step < 1) step = 1;
+
+  _canvas->fillRect(0, 0, dimension, thickness * 2 + gap, _bgcolor);
+  for(int i=0; i<dimension; i++){
+    if(i % step == 0){
+      bandColor = (i > dimension - (dimension/_bands.perheight)*3) ? _vumaxcolor : _vumincolor;
+      _canvas->fillRect(i, 0, h, thickness, bandColor);
+      _canvas->fillRect(i, thickness + gap, h, thickness, bandColor);
+    }
+  }
+  // clear the quiet end (right) so the bar's tip grows left-to-right
+  _canvas->fillRect(dimension - measL, 0, measL, thickness, _bgcolor);
+  _canvas->fillRect(dimension - measR, thickness + gap, measR, thickness, _bgcolor);
+
+  dsp.drawRGBBitmap(_config.left, _config.top, _canvas->getBuffer(), dimension, thickness * 2 + gap);
+}
+
 void VuWidget::loop(){
   if(_active || !_locked) _draw();
 }
 
 void VuWidget::_clear(){
-  dsp.fillRect(_config.left, _config.top, _bands.width * 2 + _bands.space, _bands.height, _bgcolor);
+  if (_rotate)
+    dsp.fillRect(_config.left, _config.top, _bands.height, _bands.width * 2 + _bands.space, _bgcolor);
+  else
+    dsp.fillRect(_config.left, _config.top, _bands.width * 2 + _bands.space, _bands.height, _bgcolor);
 }
 #else // DSP_LCD
 VuWidget::~VuWidget() { }

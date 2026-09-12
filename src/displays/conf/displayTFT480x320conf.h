@@ -30,6 +30,7 @@ const BootData _bootConfig PROGMEM = {
 
 const char _layoutNames[][64] PROGMEM = {
     "Default",
+    "Default (VU Rotated)",
     "VaraiTamas (BoomBox)",
 };
 
@@ -65,6 +66,40 @@ const LayoutData _layouts[] PROGMEM = {
         .clockMove           = { 0, 0, -1 },
         .weatherMove         = { TFT_FRAMEWDT, 120, MAX_WIDTH },
         .weatherMoveVU       = { 89, 120, MAX_WIDTH-89+TFT_FRAMEWDT },
+    },
+    {   // Default (VU Rotated)
+        /* SCROLLS             {{ left, top, fontsize, align }, buffsize, uppercase, width, scrolldelay, scrolldelta, scrolltime } */
+        .metaConf            = {{ TFT_FRAMEWDT, TFT_FRAMEWDT, 4, WA_LEFT }, 140, true, MAX_WIDTH, SCROLLDELAY, 3, SCROLLTIME },
+        .title1Conf          = {{ TFT_FRAMEWDT, 62, 2, WA_LEFT }, 140, true, MAX_WIDTH-(44==0?6*2*7-6:44), SCROLLDELAY, 2, SCROLLTIME },
+        .title2Conf          = {{ TFT_FRAMEWDT, 86, 2, WA_LEFT }, 140, true, MAX_WIDTH-44, SCROLLDELAY, 2, SCROLLTIME },
+        .playlistConf        = {{ TFT_FRAMEWDT, 146, 3, WA_LEFT }, 140, true, MAX_WIDTH, SCROLLDELAY/5, 3, SCROLLTIME },
+        .weatherConf         = {{ TFT_FRAMEWDT, 120, 2, WA_LEFT }, 140, true, MAX_WIDTH, 0, 2, SCROLLTIME },
+        /* BACKGROUNDS         {{ left, top, fontsize, align }, width, height, outlined } */
+        .metaBGConf          = {{ 0, 0, 0, WA_LEFT }, DSP_WIDTH, 50, false },
+        .metaBGConfInv       = {{ 0, 50, 0, WA_LEFT }, DSP_WIDTH, 2, false },
+        .volbarConf          = {{ TFT_FRAMEWDT, DSP_HEIGHT-TFT_FRAMEWDT-8, 0, WA_LEFT }, MAX_WIDTH, 8, true },
+        .playlBGConf         = {{ 0, 138, 0, WA_LEFT }, DSP_WIDTH, 36, false },
+        .bufferbarConf       = {{ 0, DSP_HEIGHT-2, 0, WA_LEFT }, DSP_WIDTH, 2, false },
+        .bitrateConf         = { 6, 62, 2, WA_RIGHT },
+        .voltxtConf          = { 0, DSP_HEIGHT-38, 2, WA_CENTER },
+        .batteryConf         = { (DSP_WIDTH*2)/3+2, DSP_HEIGHT-38, 2, WA_LEFT },
+        .iptxtConf           = { TFT_FRAMEWDT, DSP_HEIGHT-38, 2, WA_LEFT },
+        .rssiConf            = { TFT_FRAMEWDT, DSP_HEIGHT-38-6, 3, WA_RIGHT },
+        .numConf             = { 0, 200, 0, WA_CENTER },
+        .clockConf           = { TFT_FRAMEWDT*2, 230, 0, WA_RIGHT },
+        .vuConf              = { TFT_FRAMEWDT, 161, 1, WA_LEFT }, //136 touches title2 almost, 210 touches IP, 162 (161?) top of clock
+        //.vuConf              = { TFT_FRAMEWDT, 159, 1, WA_LEFT }, //136 touches title2 almost, 210 touches IP, 162 (161?) top of clock
+        /* CODEC BADGE         {{ left, top, fontsize, align }, dimension} - if empty, bitrateConf will be used instead */
+        .fullbitrateConf     = {{ DSP_WIDTH-TFT_FRAMEWDT-38, 59, 2, WA_LEFT }, 42 },
+        /* VU BANDS            { onebandwidth, onebandheight, bandsHspace, bandsVspace, numofbands, fadespeed } */
+        //.bandsConf           = { 46, 130, 7, 2, 10, 3 }, //1st: 32, 130, 4, 2
+        .bandsConf           = { 25, 130, 17, 3, 10, 3 }, //1st: 32, 130, 4, 2
+        /* MOVES               { left, top, width (-1 keeps Conf position) */
+        .clockMove           = { 0, 0, -1 },
+        .weatherMove         = { TFT_FRAMEWDT, 120, MAX_WIDTH },
+        .weatherMoveVU       = { TFT_FRAMEWDT, 120, MAX_WIDTH },
+        /* ROTATED VU: transpose the default bottom-to-top VU into a left-to-right bar */
+        .rotateVU            = true,
     },
     {   // VaraiTamas (BoomBox)
         /* SCROLLS             {{ left, top, fontsize, align }, buffsize, uppercase, width, scrolldelay, scrolldelta, scrolltime } */

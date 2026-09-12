@@ -161,11 +161,13 @@ class VuWidget: public Widget {
     void loop();
   protected:
     #if !defined(DSP_LCD) && !defined(DSP_OLED)
-      Canvas *_canvas;
+      Canvas *_canvas = nullptr;
     #endif
     VUBandsConfig _bands;
     uint16_t _vumaxcolor, _vumincolor;
+    bool _rotate = false;
     void _draw();
+    void _drawRotated();
     void _clear();
 };
 

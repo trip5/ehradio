@@ -59,6 +59,7 @@ const MoveConfig*     clockMove_ptr       = &_layouts[0].clockMove;
 const MoveConfig*     weatherMove_ptr     = &_layouts[0].weatherMove;
 const MoveConfig*     weatherMoveVU_ptr   = &_layouts[0].weatherMoveVU;
 const bool*           boomboxStyle_ptr    = &activeLayout.boomboxStyle;
+const bool*           rotateVU_ptr        = &activeLayout.rotateVU;
 uint8_t layoutCount = (sizeof(_layoutNames) / sizeof(_layoutNames[0]));
 #else
 const ScrollConfig*   metaConf_ptr        = nullptr;
@@ -85,6 +86,7 @@ const MoveConfig*     clockMove_ptr       = nullptr;
 const MoveConfig*     weatherMove_ptr     = nullptr;
 const MoveConfig*     weatherMoveVU_ptr   = nullptr;
 const bool*           boomboxStyle_ptr    = nullptr;
+const bool*           rotateVU_ptr        = nullptr;
 uint8_t layoutCount = 0;
 #endif
 

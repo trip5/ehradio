@@ -93,6 +93,7 @@ struct LayoutData {
     MoveConfig   weatherMove;
     MoveConfig   weatherMoveVU;
     bool         boomboxStyle;
+    bool         rotateVU;
 };
 
 // Layout switching — extern pointer declarations, defined in display.cpp
@@ -120,6 +121,7 @@ extern const MoveConfig*    clockMove_ptr;
 extern const MoveConfig*    weatherMove_ptr;
 extern const MoveConfig*    weatherMoveVU_ptr;
 extern const bool*          boomboxStyle_ptr;
+extern const bool*          rotateVU_ptr;
 
 extern LayoutData activeLayout;
 extern uint8_t layoutCount;
